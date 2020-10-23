@@ -1,0 +1,45 @@
+#!/bin/csh -f
+
+set TITLE    = ( testBonus5 )
+set gcard    = ( testBonus.gcard ) 
+set lund     = ( txt_Lund5_ )
+set NEVENTS  = 1000
+set NMAX     = 100
+
+set launchd   = `pwd`
+set workdir   = /volatile/clas12/users/bondi/streaming/bonus
+set lund_dir  = /home/bondi/farm/clas12/simul/streaming/bonus/Lund5
+set gcard_dir = .
+
+
+set i = 1
+while ($i <= $NMAX)
+
+	set simu = $i
+	set w = 1
+
+	while ($w <= $#TITLE)
+		rm -f gemc.jsub
+		\echo  JOBNAME: $TITLE[$w]_$i                                                                    > gemc.jsub
+		\echo  PROJECT: clas12                                                                          >> gemc.jsub
+		\echo  MAIL:    bondi@jlab.org                                                                 >> gemc.jsub
+		\echo  TRACK:   simulation                                                                      >> gemc.jsub
+#		\echo  TRACK:   debug                                                                           >> gemc.jsub
+		\echo  COMMAND: go_simulate $launchd $workdir $simu $gcard[$w] $NEVENTS $TITLE[$w] $lund$i.txt $lund_dir              >> gemc.jsub
+#		\echo  OS:      general                                               		                >> gemc.jsub
+                \echo  OS:      centos77                                                                         >> gemc.jsub
+		\echo  MEMORY:  1000 MB                                         		                        >> gemc.jsub
+                \echo  TIME:    200                                                                             >> gemc.jsub
+		\echo  OTHER_FILES: $launchd/go_simulate                                                        >> gemc.jsub
+		\echo  OTHER_FILES: $launchd/$gcard_dir/$gcard[$w]                                              >> gemc.jsub
+		\echo
+		\echo Launching simulation $i for $TITLE[$w]
+		\echo
+		/site/bin/jsub gemc.jsub
+		#      cat  gemc.jsub
+		@ w += 1
+	end 
+	@ i += 1 
+end
+
+

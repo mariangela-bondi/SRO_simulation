@@ -1,0 +1,69 @@
+#!/bin/csh -f
+
+echo aaa > ~/aaa
+hostname
+
+
+# Usage:
+# go_simulate gcard TITLE workdir nevents
+
+set launchd  = $1
+set workdir  = $2
+set SIMU     = $3
+set gcard    = $4
+set NEVENTS  = $5
+set TITLE    = $6
+set LUND     = $7
+set dir_lund = $8
+echo
+
+set dir = $workdir/$TITLE
+mkdir -p $dir
+mkdir -p $dir/gemc
+mkdir -p $dir/root
+mkdir -p $dir/log
+mkdir -p $dir/hipo
+mkdir -p $dir/hipo_reco
+set simu = `printf "%05d" $SIMU`
+
+set origd = `pwd`
+
+# Look for first non existing dir
+		echo Starting Simulation $SIMU
+		echo output directory is $dir
+		echo
+
+		cp -r $launchd/dc__bank.txt .
+
+		echo gemc executable: `which gemc`
+		echo
+		ls -alp  
+		echo    
+		
+		echo gemc experiment directory set to $GEMC_DATA_DIR
+		echo       
+
+		echo Getting run conditions from gcard
+		set runno = `grep RUNNO $gcard | awk -F \" '{print $4}'`
+		set torus = `grep SCALE_FIELD $gcard | grep TorusSymmetric | awk -F\" '{print $4}' | awk -F, '{print $2}'`		
+		set solen = `grep SCALE_FIELD $gcard | grep solenoid | awk -F\" '{print $4}' | awk -F, '{print $2}'`		
+		echo run number  is $runno
+		echo torus field is $torus
+		echo solenoid field is $solen
+
+		echo Running gemc
+		gemc $gcard -INPUT_GEN_FILE="LUND, $dir_lund/$LUND"  -N=$NEVENTS -USE_GUI=0 -PRINT_EVENT=10 > $dir/log/gemc_$simu.log
+               
+#                source /group/clas12/packages/setup.csh                                                       #     
+#                module load clas12 
+                evio2root -INPUTF=out.ev
+                echo $CLAS12DIR
+                evio2hipo -r 11 -t 0 -s -1 -i out.ev -o out.hipo
+                recon-util -c 2 -i out.hipo -o out_reco.hipo > $dir/log/reco_$simu.log
+                ls -ltr
+		
+		mv out.ev        $dir/gemc/out_$simu.evio
+		mv out.root      $dir/root/out_$simu.root
+                mv out.hipo      $dir/hipo/out_$simu.hipo
+                mv out_reco.hipo $dir/hipo_reco/out_reco_$simu.hipo
+
